@@ -1,0 +1,684 @@
+#include <map>
+#include <random>
+#include <cmath>
+#include <algorithm>
+#include <memory> // For std::shared_ptr
+#include <vector> // For neighbor searching
+#include <functional> // For neighbor search criteria
+#include <unordered_map> // For efficient neighbor search
+
+class FractionalDimension {
+public:
+  FractionalDimension(double whole = 0.0, double fractional = 0.0)
+      : whole_(whole), fractional_(fractional) {}
+
+  // Getter and setter methods for whole and fractional parts
+  double getWhole() const { return whole_; }
+  void setWhole(double value) { whole_ = value; }
+
+  double getFractional() const { return fractional_; }
+  void setFractional(double value) { fractional_ = value; }
+
+private:
+  double whole_;
+  double fractional_;
+};
+
+class NestedDimension {
+public:
+  NestedDimension(double value) : value_(value) {}
+
+  // Add a nested dimension (child)
+  std::shared_ptr<NestedDimension> addNestedDimension(double value) {
+    children_.emplace_back(value);
+    return children_.back();
+  }
+
+  // Get the value of this dimension
+  double getValue() const { return value_; }
+
+private:
+  double value_;
+  std::vector<std::shared_ptr<NestedDimension>> children_; // List of child dimensions
+};
+  // New class for managing dimensions with communication and collaboration
+class Dimension {
+public:
+  Dimension(const std::string& name, const std::variant<double, FractionalDimension, LightSpectrum, std::shared_ptr<NestedDimension>>& value)
+      : name_(name), value_(value) {}
+
+  // Accessor methods
+  const std::string& getName() const { return name_; }
+  const std::variant<double, FractionalDimension, LightSpectrum, std::shared_ptr<NestedDimension>>& getValue() const { return value_; }
+
+  // Collaborate with other dimensions based on information exchange
+  void collaborate(const std::vector<Dimension>& neighbors, double pheromone) {
+    // Update dimension value based on information from neighbors and pheromone influence
+    // (Specific implementation depends on the type of dimension data)
+    if (std::holds_alternative<double>(value_)) {
+      double current_value = std::get<double>(value_);
+      double update = 0.0;
+      for (const auto& neighbor : neighbors) {
+        if (std::holds_alternative<double>(neighbor.getValue())) {
+          update += std::get<double>(neighbor.getValue()) * pheromone;
+        }
+      }
+      value_ = current_value + update;
+    }
+    // Handle other dimension types (FractionalDimension, etc.) in future enhancements
+  }
+
+private:
+  std::string name_;
+  std::variant<double, FractionalDimension, LightSpectrum, std::shared_ptr<NestedDimension>> value_;
+};
+
+class InfiniteNumberSystem {
+private:
+  std::map<std::string, Dimension> dimensions_;
+
+public:
+  InfiniteNumberSystem(const std::map<std::string::value_type, std::variant<double, FractionalDimension, LightSpectrum, std::shared_ptr<NestedDimension>>>& initial_data) {
+    for (const auto& [name, value] : initial
+     data) {
+      dimensions_[name] = Dimension(name, value);
+    }
+  }
+
+
+class InfiniteNumberSystem {
+private:
+  std::unordered_map<std::string, Dimension> dimensions_;
+  double baseLearningRate_;
+  double explorationBoost_;
+  double pheromoneDecayRate_;
+  double basePruningThreshold_;
+  double pruningThresholdMultiplier_;
+  double progressThreshold_;
+  double rewardMultiplier_;
+  // Stores pheromone values for each dimension (key is dimension name)
+  std::map<std::string, double> pheromones_;
+
+  // Helper function to calculate euclidean distance
+  double distance(const Dimension& a, const Dimension& b) {
+    double sum = 0;
+    for (const auto& [key, valA] : a.getValues()) {
+      auto valB = b.getValue(key);
+      if (valB) {
+        sum += std::pow(valA - *valB, 2);
+      }
+    }
+    return std::sqrt(sum);
+  }
+
+public:
+  InfiniteNumberSystem(double baseLearningRate = 0.1,
+                      double explorationBoost = 2.0,
+                      double pheromoneDecayRate = 0.9,
+                      double basePruningThreshold = 0.2,
+                      double pruningThresholdMultiplier = 1.5,
+                      double progressThreshold = 0.8,
+                      double rewardMultiplier = 0.5)
+      : baseLearningRate_(baseLearningRate), explorationBoost_(explorationBoost),
+        pheromoneDecayRate_(pheromoneDecayRate), basePruningThreshold_(basePruningThreshold),
+        pruningThresholdMultiplier_(pruningThresholdMultiplier), progressThreshold_(progressThreshold),
+        rewardMultiplier_(rewardMultiplier) {}
+
+  // Get intensity with redundancy (inspired by ant colony resilience)
+  double GetIntensity(double wavelength) const {
+    try {
+      return dimensions_.at(getName(wavelength)).getValue().get<LightSpectrum>().GetIntensity(wavelength);
+    } catch (const std::out_of_range& e) {
+      // Handle missing wavelength with redundancy:
+      // 1. Try to estimate intensity from neighbors (if applicable)
+      std::vector<Dimension> neighbors = getNeighbors(wavelength, [](const Dimension& dim) {
+        // Example criteria: search for dimensions with names containing "color" or "wavelength"
+        return (dim.getName().find("color") != std::string::npos ||
+                dim.getName().find("wavelength") != std::string::npos);
+      });
+      double estimatedIntensity = 0.0;
+      for (const auto& neighbor : neighbors) {
+        try {
+          estimatedIntensity += neighbor.getValue().get<LightSpectrum>().GetIntensity(wavelength);
+        } catch (...) {
+          // Ignore errors from neighbors (might not have relevant data)
+        }
+      }
+      if (neighbors.size() > 0) {
+        estimatedIntensity /= neighbors.size();
+        return estimatedIntensity;
+      }
+      // 2. If neighbors don't help, return default value (fallback)
+      return 0.0;
+    }
+  }
+
+  // Dimension update with pheromone-like mechanism (inspired by ant foraging)
+  void efficiencyEvolve() {
+    // Create a pheromone map to store dimension update history
+    std::map<std::string, double> pheromones;
+
+    for (auto& [name, dimension] : dimensions_) {
+      // Access dimension value and type
+      const auto& value = dimension.getValue();
+      if (std::holds_alternative<double>(value)) {
+        double current_value = std::get<double>(value);
+
+        // Update value using gradient descent with pheromone influence
+        double learningRate = 0.01;
+        double new_value = current_value - learningRate * costFunction(current_value) * pheromones[name];
+
+        // Update dimension value and pheromone level
+        dimension.value_ = new_value;
+        pheromones[name] = std::min(1.0, pheromones[name] + 0.1); // Increase pheromone for successful updates
+      } else {
+        // Handle non-double dimension types (optimization not directly applicable)
+      }
+    }
+  }
+
+ // Method to add a new dimension with the specified data type
+ void addDimension(const std::string& dimension_name, const std::variant<double, FractionalDimension, LightSpectrum, std::shared_ptr<NestedDimension>>& value) {
+  data_[dimension_name] = value;
+ }
+ // Method to get the color of a dimension
+ std::vector<std::string> GetColor(const std::string& dimension_name) {
+ return colors_[dimension_name];
+ }
+
+ // Method to get the shade of a dimension
+ std::vector<std::string> GetShade(const std::string& dimension_name) {
+ return shades_[dimension_name];
+ }
+
+ // Method to get the complexity of a dimension
+ std::bitset<512> GetComplexity(const std::string& dimension_name) {
+ return complexities_[dimension_name];
+ }
+};
+ // Method to add a new dimension
+ void addDimension(const std::string& dimensionName, double initialValue) {
+  dimensions[dimensionName] = initialValue;
+ }
+
+ // Method to toggle automatic addition of dimensions
+ void toggleAutoAddDimensions() {
+  autoAddDimensions = !autoAddDimensions;
+ }
+
+ // Method to automatically add dimensions
+ void autoAddDimensions(int numDimensions) {
+  if (autoAddDimensions) {
+   for (int i = 0; i < numDimensions; ++i) {
+    addDimension("autoDimension" + std::to_string(i), 0.0);
+   }
+  }
+ }
+
+ // Performs element-wise addition of two InfiniteNumberSystem objects
+ InfiniteNumberSystem operator+(const InfiniteNumberSystem& other) const {
+ std::map<std::string, double> result;
+ for (const auto& [name, value] : dimensions_) {
+  result[name] = value + other.dimensions_.at(name);
+ }
+ return InfiniteNumberSystem(result);
+ }
+InfiniteNumberSystem add(const InfiniteNumberSystem& other) {
+  std::map<std::string, double> result;
+  for (auto& dimension : data) {
+   result[dimension.first] = dimension.second + other.data.at(dimension.first);
+  }
+  return InfiniteNumberSystem(result);
+ }
+
+ InfiniteNumberSystem subtract(const InfiniteNumberSystem& other) {
+  std::map<std::string, double> result;
+  for (auto& dimension : data) {
+   result[dimension.first] = dimension.second - other.data.at(dimension.first);
+  }
+  return InfiniteNumberSystem(result);
+ }
+
+ InfiniteNumberSystem multiply(const InfiniteNumberSystem& other) {
+  std::map<std::string, double> result;
+  for (auto& dimension : data) {
+   result[dimension.first] = dimension.second * other.data.at(dimension.first);
+  }
+  return InfiniteNumberSystem(result);
+ }
+
+ InfiniteNumberSystem divide(const InfiniteNumberSystem& other) {
+  std::map<std::string, double> result;
+  for (auto& dimension : data) {
+   if (other.data.at(dimension.first) != 0) {
+    result[dimension.first] = dimension.second / other.data.at(dimension.first);
+   }
+  }
+  return InfiniteNumberSystem(result);
+ }
+ // Scales all dimensions by a factor
+ void Scale(double factor) {
+ for (auto& [_, value] : dimensions_) {
+  value *= factor;
+ }
+ }
+ // Compares the magnitudes of two InfiniteNumberSystem objects using Euclidean distance
+ int CompareMagnitude(const InfiniteNumberSystem& other) const {
+ double self_magnitude = 0.0;
+ double other_magnitude = 0.0;
+ for (const auto& [name, value] : dimensions_) {
+  self_magnitude += std::pow(value, 2);
+  other_magnitude += std::pow(other.dimensions_.at(name), 2);
+ }
+ self_magnitude = std::sqrt(self_magnitude);
+ other_magnitude = std::sqrt(other_magnitude);
+
+ if (self_magnitude < other_magnitude) {
+  return -1;
+ } else if (self_magnitude > other_magnitude) {
+  return 1;
+ } else {
+  return 0;
+ }
+ }
+// Method to optimize a value
+void optimize(double& value) {
+ // Define a learning rate
+ double learningRate = 0.01;
+
+ // Use a gradient descent algorithm to find the minimum of the cost function
+ value -= learningRate * costFunctionDerivative(value);
+}
+
+// Method to calculate the derivative of the cost function
+double costFunctionDerivative(double value) {
+ // Define a small change in x
+ double dx = 0.0001;
+
+ // Use the definition of the derivative to calculate the derivative of the cost function
+ return (costFunction(value + dx) - costFunction(value)) / dx;
+}
+
+// Method to calculate the cost function
+double costFunction(double value) {
+ // Use the square of the value as a simple cost function
+ return value * value;
+}
+
+// Override the efficiencyEvolve method
+void efficiencyEvolve() override {
+ // Iterate over each dimension
+ for (auto& dimension : data) {
+  // Adjust the value in this dimension to minimize the cost function
+  dimension.second = optimize(dimension.second);
+ }
+
+public:
+ InfiniteNumberSystem(std::map<std::string, double> dimensions) : dimensions(dimensions) {}
+
+ // Method to add a new dimension
+ void addDimension(const std::string& dimensionName, double initialValue) {
+  dimensions[dimensionName] = initialValue;
+ }
+
+ // Method to toggle automatic addition of dimensions
+ void toggleAutoAddDimensions() {
+  autoAddDimensions = !autoAddDimensions;
+ }
+
+ // Method to automatically add dimensions
+ void autoAddDimensions(int numDimensions) {
+  if (autoAddDimensions) {
+   for (int i = 0; i < numDimensions; ++i) {
+    addDimension("autoDimension" + std::to_string(i), 0.0);
+   }
+  }
+ }
+};private:
+  std::string getName(double wavelength) const {
+    // You can modify this method to construct a name based on the wavelength
+    // This example simply returns a string representation of the wavelength
+    return std::to_string(wavelength);
+  }
+
+  // Setter method for intensity (can be added for other properties)
+  void SetIntensity(double wavelength, double intensity) {
+    dimensions_.at(getName(wavelength)).getValue().get<LightSpectrum>().      AddIntensity(wavelength, intensity);
+  }
+};
+
+// Cost function example (replace with your specific cost function)
+double costFunction(double value) {
+  return std::pow(value - 1.0, 2); // Simple quadratic cost function (minimize distance from 1.0)
+}
+
+// Example usage
+int main() {
+  // Initial data with a LightSpectrum dimension
+  std::map<std::string::value_type, std::variant<double, FractionalDimension, LightSpectrum, std::shared_ptr<NestedDimension>>> initial_data = {
+    {"red_intensity", LightSpectrum({{500.0, 0.8}, {600.0, 1.0}})}
+  };
+
+  InfiniteNumberSystem system(initial_data);
+
+  // Optimize intensity at a specific wavelength
+  system.optimizeIntensity(550.0, 0.1, costFunction);
+
+  // Get intensity with redundancy handling (might change after optimization)
+  double intensity = system.GetIntensity(550.0);
+  std::cout << "Intensity at 550nm: " << intensity << std::endl;
+
+  // **Example with user-defined neighbor search criteria:**
+  // Search for dimensions with names containing "temperature" for collaboration
+  std::vector<Dimension> temperatureNeighbors = system.getNeighbors(0.0, [](const Dimension& dim) {
+    return dim.getName().find("temperature") != std::string::npos;
+  });
+
+  // Perform system evolution considering temperature neighbors only
+  system.efficiencyEvolve(temperatureNeighbors);
+
+  // ... (further use of the InfiniteNumberSystem object) ...
+
+  return 0;
+}
+
+
+  // Collaboration (can be extended for parent-child communication)
+  void Dimension::collaborate(const Dimension& other) {
+    // ... (existing logic for information sharing)
+
+    // Share intensity or relevant data points with neighbors (enhanced)
+    for (const auto& [key, value] : getValues()) {
+      double neighborValue = other.getValue(key);
+      if (neighborValue) {
+        // Update pheromone based on value difference and exploration boost
+        double pheromoneUpdate = explorationBoost_ * std::abs(value - neighborValue);
+        updatePheromone(key, pheromUpdate);
+      }
+    }
+  }
+};
+
+// Function to update pheromone for a specific dimension (no placeholder)
+void InfiniteNumberSystem::updatePheromone(const std::string& key, double updateValue) {
+  // Access current pheromone for the dimension key
+  double currentPheromone = pheromones_[key];
+
+  // Decay existing pheromone and add update value
+  currentPheromone = currentPheromone * pheromoneDecayRate_ + updateValue;
+
+  // Clip pheromone to a reasonable range (optional)
+  currentPheromone = std::clamp(currentPheromone, 0.0, 1.0);
+
+  // Update pheromone for the dimension key
+  pheromones_[key] = currentPheromone;
+}
+
+// Get preferred neighbors based on value similarity, spatial proximity (if applicable), and semantic relevance (if applicable)
+std::vector<Dimension> Dimension::getPreferredNeighbors() const {
+  std::vector<Dimension> preferredNeighbors;
+  std::vector<std::pair<Dimension, double>> rankedNeighbors;
+
+  // 1. Combine multiple criteria:
+
+  // Value similarity:
+  for (const auto& [name, neighbor] : dimensions_) {
+    double similarity = calculateSimilarity(neighbor); // Replace with your implementation
+    rankedNeighbors.push_back({neighbor, similarity});
+  }
+
+  // Spatial proximity (if applicable):
+  if (hasSpatialCoordinates()) {  // Assume spatial coordinates exist
+    for (auto& neighborPair : rankedNeighbors) {
+      double distance = calculateDistance(neighborPair.first); // Replace with your implementation
+      // Use pheromone to influence neighbor selection based on past interactions
+      double pheromoneWeight = getPheromone(name); // Access pheromone for this dimension
+      neighborPair.second += std::exp(-distance / spatialProximityWeight_) * pheromoneWeight;
+    }
+  }
+
+  // Semantic relevance (if applicable):
+  if (hasSemanticTags()) {  // Assume semantic tags exist
+    for (auto& neighborPair : rankedNeighbors) {
+      double relevance = calculateSemanticRelevance(neighborPair.first); // Replace with your implementation
+      neighborPair.second += relevance * semanticRelevanceWeight_;
+    }
+  }
+
+  // 2. Prioritize based on context or optimization goals:
+  std::sort(rankedNeighbors.begin(), rankedNeighbors.end(),
+            [](const auto& a, const auto& b) { return a.second > b.second; });
+
+  // 3. Select top neighbors or apply threshold:
+  int numNeighbors = std::min(maxNumNeighbors_, rankedNeighbors.size());
+  for (int i = 0; i < numNeighbors; ++i) {
+    preferredNeighbors.push_back(rankedNeighbors[i].first);
+  }
+
+  return preferredNeighbors;
+}void InfiniteNumberSystem::optimizeIntensity(double wavelength, double learningRate,
+                                              double (*costFunction)(double)) {
+  // Access initial intensity for the given wavelength
+  double currentIntensity = getIntensity(wavelength);
+
+  bool improvementMade = true;
+  while (improvementMade) {
+    double previousCost = costFunction(currentIntensity);
+
+    // Retrieve preferred neighbors for potential collaboration
+    std::vector<Dimension> neighbors = getPreferredNeighbors(wavelength);
+
+    // Perform optimization steps, potentially leveraging collaboration with neighbors
+    for (int step = 0; step < 10; ++step) {  // Example: 10 steps per iteration
+      // 1. Calculate gradient (replace with your gradient calculation method)
+      double gradient = calculateGradient(wavelength, costFunction);
+
+      // 2. Consider collaborating with neighbors for gradient guidance
+      if (!neighbors.empty()) {
+        double neighborGradient = 0;
+        for (const auto& neighbor : neighbors) {
+          neighborGradient += neighbor.getGradient(wavelength);  // Replace with neighbor gradient access
+        }
+        neighborGradient /= neighbors.size();  // Average neighbor gradient
+        gradient = (1 - collaborationWeight_) * gradient + collaborationWeight_ * neighborGradient;
+      }
+
+      // 3. Update intensity using gradient descent
+      double intensityUpdate = -learningRate * gradient;
+      currentIntensity += intensityUpdate;
+
+      // 4. (Optional) Constrain intensity within a valid range
+      currentIntensity = std::min(std::max(currentIntensity, minIntensity_), maxIntensity_);
+      
+      // 5. Update pheromones based on cost improvement (optional)
+      double currentCost = costFunction(currentIntensity);
+      double costDifference = previousCost - currentCost;
+      if (costDifference > 0) {
+        // Improvement achieved, update pheromones
+        for (const auto& name : dimensionNames_) {
+          updatePheromone(name, explorationBoost_ * std::abs(costDifference));
+        }
+      }
+    }
+
+    improvementMade = (currentCost < previousCost);  // Check for overall improvement
+  }
+
+  // Set the final optimized intensity
+  setIntensity(wavelength, currentIntensity);
+}
+   // calculateSimilarity for objects (assuming mass and location)
+double Dimension::calculateSimilarity(const Dimension& other) const {
+  double massSimilarity = std::abs(getMass() - other.getMass()) / std::max(getMass(), other.getMass());
+  double locationSimilarity = calculateDistance(other); // Assuming distance function exists
+  return (massSimilarity + locationSimilarity) / 2.0;
+}
+
+// getPreferredNeighbors with kNN and spatial weighting
+std::vector<Dimension> Dimension::getPreferredNeighbors() const {
+  // Use kNN to find k closest neighbors based on combined similarity (mass, location)
+  std::vector<Dimension> neighbors = knnSearch(k, [](const Dimension& a, const Dimension& b) {
+    return calculateSimilarity(a, b);
+  });
+
+  // Apply spatial weighting based on distance (closer neighbors get higher weight)
+  for (auto& neighbor : neighbors) {
+    double distance = calculateDistance(neighbor);
+    neighbor.weight = std::exp(-distance / spatialProximityWeight_);
+  }
+
+  // Normalize weights and sort neighbors by weight (descending)
+  normalizeWeights(neighbors);
+  std::sort(neighbors.begin(), neighbors.end(),
+            [](const Dimension& a, const Dimension& b) { return a.weight > b.weight; });
+
+  return neighbors;
+}
+    void Dimension::collaborate(const std::vector<Dimension>& neighbors, FusionType fusionType) {
+  // ... existing code for information exchange and pheromone update ...
+
+  // Data fusion
+  if (fusionType != FusionType::NONE) {
+    double fusedValue = 0.0;
+    int numNeighbors = neighbors.size();
+
+    // Handle different data types based on variant
+    if (std::holds_alternative<double>(value_)) {
+      for (const Dimension& neighbor : neighbors) {
+        if (std::holds_alternative<double>(neighbor.value_)) {
+          fusedValue += std::get<double>(neighbor.value_);
+        }
+      }
+      fusedValue = (fusedValue + getDoubleValue()) / (numNeighbors + 1);
+    } else if (std::holds_alternative<LightSpectrum>(value_)) {
+      // Example: averaging intensities for LightSpectrum (assuming getIntensity())
+      for (const Dimension& neighbor : neighbors) {
+        if (std::holds_alternative<LightSpectrum>(neighbor.value_)) {
+          fusedValue += neighbor.getIntensity();
+        }
+      }
+      fusedValue = (fusedValue + getIntensity()) / (numNeighbors + 1);
+      setValue(LightSpectrum(fusedValue));
+    } else {
+      // Handle other data types or indicate fusion not supported
+      // ...
+    }
+
+    // Update value based on fusion type
+    switch (fusionType) {
+      case FusionType::AVERAGE:
+        setValue(fusedValue);
+        break;
+      case FusionType::WEIGHTED_AVERAGE:
+        // Implement weighted averaging based on neighbor weights (if available)
+        // ...
+        break;
+      case FusionType::MEDIAN:
+        // Implement median calculation for appropriate data types
+        // ...
+        break;
+      default:
+        // Handle invalid fusion type
+        break;
+    }
+  }
+
+  // Constraint satisfaction (basic example)
+  for (const Dimension& neighbor : neighbors) {
+    // Check for specific constraint (example: temperature <= pressure)
+    if (getName() == "temperature" && neighbor.getName() == "pressure") {
+      double myValue = getDoubleValue();
+      double neighborValue = neighbor.getDoubleValue();
+      if (myValue > neighborValue) {
+        // Adjust current value to satisfy constraint
+        setValue(neighborValue);
+      }
+    }
+  }
+}
+     // Distance function for Euclidean distance (assuming dimensions have x, y, z coordinates)
+double distance(const Dimension& a, const Dimension& b) {
+  double sum = 0.0;
+  // Check if both dimensions have x, y, z values
+  if (a.hasCoordinates() && b.hasCoordinates()) {
+    sum += std::pow(a.getX() - b.getX(), 2);
+    sum += std::pow(a.getY() - b.getY(), 2);
+    sum += std::pow(a.getZ() - b.getZ(), 2);
+  }
+  return std::sqrt(sum);
+}
+
+// Similarity function for objects (assuming mass and location)
+double Dimension::calculateSimilarity(const Dimension& other) const {
+  double massSimilarity = std::abs(getMass() - other.getMass()) / std::max(getMass(), other.getMass());
+  double locationSimilarity = distance(other); // Assuming distance function exists
+  return (massSimilarity + locationSimilarity) / 2.0;
+}
+
+// k-Nearest Neighbors search with custom distance metric
+std::vector<Dimension> Dimension::knnSearch(int k, const std::function<double(const Dimension&, const Dimension&)>& distanceMetric) const {
+  // Use a priority queue to store k nearest neighbors based on distance
+  std::priority_queue<std::pair<double, Dimension>, std::vector<std::pair<double, Dimension>>,
+                     std::greater<std::pair<double, Dimension>>> nearestNeighbors;
+  // Iterate through all dimensions in the system (replace with actual data source)
+  for (const auto& [name, neighbor] : dimensions_) {
+    double dist = distanceMetric(*this, neighbor);
+    if (nearestNeighbors.size() < k) {
+      nearestNeighbors.emplace(dist, neighbor);
+    } else if (dist < nearestNeighbors.top().first) {
+      nearestNeighbors.pop();
+      nearestNeighbors.emplace(dist, neighbor);
+    }
+  }
+
+  // Convert priority queue to a vector
+  std::vector<Dimension> neighbors;
+  while (!nearestNeighbors.empty()) {
+    neighbors.push_back(nearestNeighbors.top().second);
+    nearestNeighbors.pop();
+  }
+  return neighbors;
+}
+
+// Normalize weights of neighbors (assuming 'weight' member in Dimension)
+void normalizeWeights(std::vector<Dimension>& neighbors) {
+  double totalWeight = 0.0;
+  for (auto& neighbor : neighbors) {
+    totalWeight += neighbor.weight;
+  }
+  if (totalWeight > 0.0) {
+    for (auto& neighbor : neighbors) {
+      neighbor.weight /= totalWeight;
+    }
+  }
+}
+
+// Example gradient calculation for intensity optimization (replace with your specific cost function)
+double calculateGradient(double wavelength, double (*costFunction)(double)) {
+  double delta = 0.001;
+  double intensity = getIntensity(wavelength);
+  return (costFunction(intensity + delta) - costFunction(intensity)) / delta;
+}
+
+// Dimension collaboration with weighted average data fusion
+void Dimension::collaborate(const std::vector<Dimension>& neighbors, FusionType fusionType) {
+  // ... existing code for information exchange and pheromone update ...
+
+  // Data fusion
+  if (fusionType != FusionType::NONE) {
+    double fusedValue = 0.0;
+    double totalWeight = 0.0;
+
+    // Handle different data types based on variant
+    if (std::holds_alternative<double>(value_)) {
+      for (const Dimension& neighbor : neighbors) {
+        if (std::holds_alternative<double>(neighbor.value_)) {
+          double weight = neighbor.weight; // Assuming weight is calculated in neighbor selection
+          fusedValue += weight * std::get<double>(neighbor.value_);
+          totalWeight += weight;
+        }
+      }
+      if (totalWeight > 0.0) {
+        fusedValue /= totalWeight;
+         setValue(fusedValue); // Update value based on fusion type
+  }
